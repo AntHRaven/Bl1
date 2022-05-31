@@ -80,8 +80,8 @@ public class MqttSenderConfig {
     public MessageChannel mqttOutboundChannel() {
         return new DirectChannel();
     }
-    
-    
+
+
 //    @Bean
 //    public MqttPahoMessageDrivenChannelAdapter mqttInbound() {
 //        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(clientInId,
