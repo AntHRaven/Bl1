@@ -8,6 +8,8 @@ import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
@@ -24,19 +26,22 @@ import java.util.List;
 @Configuration
 @IntegrationComponentScan
 public class MqttSenderConfig {
-//    @Value("${spring.mqtt.username}")
+    @Value("${spring.mqtt.username}")
     private String username;
     
-//    @Value("${spring.mqtt.password}")
+    @Value("${spring.mqtt.password}")
     private String password;
     
-//    @Value("${spring.mqtt.url}")
+    @Value("${spring.mqtt.url}")
     private String hostUrl;
     
-    //@Value("${spring.mqtt.client.id}")
-    private String clientId = String.valueOf(System.currentTimeMillis());
+    @Value("${spring.mqtt.client.out.id}")
+    private String clientOutId;
     
-    //@Value("${spring.mqtt.default.topic}")
+    @Value("${spring.mqtt.client.in.id}")
+    private String clientInId;
+    
+    @Value("${spring.mqtt.default.topic}")
     private String defaultTopic;
     
     //@Value("#{'${spring.mqtt.topics}'.split(',')}")
@@ -45,12 +50,13 @@ public class MqttSenderConfig {
    // @Value("#{'${spring.mqtt.qosValues}'.split(',')}")
     private List<Integer> qosValues;
     
+    // client factory
     @Bean
     public MqttConnectOptions getMqttConnectOptions() {
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
-        mqttConnectOptions.setUserName(username);
+//        mqttConnectOptions.setUserName(username);
         mqttConnectOptions.setCleanSession(true);
-        mqttConnectOptions.setPassword(password.toCharArray());
+//        mqttConnectOptions.setPassword(password.toCharArray());
         mqttConnectOptions.setServerURIs(new String[]{hostUrl});
         mqttConnectOptions.setKeepAliveInterval(2);
         // Устанавливаем время ожидания в секундах
@@ -71,10 +77,11 @@ public class MqttSenderConfig {
     @Bean
     @ServiceActivator(inputChannel = "mqttOutboundChannel")
     public MessageHandler mqttOutbound() {
-        MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler(clientId, mqttClientFactory());
+        MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler(clientOutId, mqttClientFactory());
         messageHandler.setAsync(true);
         messageHandler.setDefaultTopic(defaultTopic);
         messageHandler.setDefaultRetained(false);
+        messageHandler.setDefaultQos(1);
         return messageHandler;
     }
     
@@ -83,40 +90,15 @@ public class MqttSenderConfig {
         return new DirectChannel();
     }
     
-    // Получать канал
-    @Bean
-    public MessageChannel mqttInputChannel() {
-        return new DirectChannel();
-    }
     
-    
-    // Настраиваем клиента, слушаем тему
-    @Bean
-    public MessageProducer inbound() {
-        String[] strings = new String[topics.size()];
-        Integer[] ints = new Integer[qosValues.size()];
-        topics.toArray(strings);
-        qosValues.toArray(ints);
-        
-        int[] its = Arrays.stream(ints).mapToInt(Integer::valueOf).toArray();
-        MqttPahoMessageDrivenChannelAdapter adapter =
-              new MqttPahoMessageDrivenChannelAdapter(clientId + "_inbound", mqttClientFactory(), strings);
-        
-        adapter.setCompletionTimeout(3000);
-        adapter.setConverter(new DefaultPahoMessageConverter());
-        adapter.setOutputChannel(mqttInputChannel());
-        return adapter;
-    }
-    
-    // Получаем данные по каналу
-    @Bean
-    @ServiceActivator(inputChannel = "mqttInputChannel")
-    public MessageHandler handler() {
-        return message -> {
-            String topic = message.getHeaders().get("mqtt_receivedTopic").toString();
-            String type = topic.substring(topic.lastIndexOf("/") + 1, topic.length());
-            System.out.println(topic + "|" + message.getPayload().toString());
-        };
-    }
-    
+//    @Bean
+//    public MqttPahoMessageDrivenChannelAdapter mqttInbound() {
+//        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(clientInId,
+//                                                                                              mqttClientFactory());
+//        adapter.setCompletionTimeout(10 * 1000);
+//        adapter.setConverter(new DefaultPahoMessageConverter());
+//        adapter.setQos(1);
+//        adapter.addTopic(defaultTopic);
+//       return adapter;
+    //}
 }
