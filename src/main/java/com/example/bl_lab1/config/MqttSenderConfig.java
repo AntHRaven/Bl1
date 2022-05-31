@@ -38,17 +38,8 @@ public class MqttSenderConfig {
     @Value("${spring.mqtt.client.out.id}")
     private String clientOutId;
     
-    @Value("${spring.mqtt.client.in.id}")
-    private String clientInId;
-    
     @Value("${spring.mqtt.default.topic}")
     private String defaultTopic;
-    
-    //@Value("#{'${spring.mqtt.topics}'.split(',')}")
-    private List<String> topics;
-    
-   // @Value("#{'${spring.mqtt.qosValues}'.split(',')}")
-    private List<Integer> qosValues;
     
     // client factory
     @Bean
